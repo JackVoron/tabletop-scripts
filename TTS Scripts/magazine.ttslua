@@ -1,0 +1,267 @@
+ function onSave()
+    local data_to_save = {
+      smax = max,
+    smin = min,
+    smb = max_bullets,
+    sbr = bullets_to_reload,
+    stype = btype,
+    sbul = bullets,
+    slev = lever
+  }
+    saved_data = JSON.encode(data_to_save)
+    return saved_data
+end
+
+white = {1,1,1}
+black = {0,0,0}
+
+function onload(saved_data)
+  if saved_data != '' then
+    load_data = JSON.decode(saved_data)
+    max = load_data.smax
+    min = load_data.smin
+    max_bullets = load_data.smb
+    bullets_to_reload = load_data.sbr
+    btype = load_data.stype
+    bullets = load_data.sbul
+    lever = load_data.slev
+  else
+    max = 0
+    min = 0
+    max_bullets = 30
+    bullets_to_reload = 0
+    btype = "Стандартный"
+    bullets = {}
+    lever = true
+  end
+
+  count = #bullets
+
+  ButtonsParams()
+
+  self.createButton(b_shot)
+  self.createButton(b_display)
+  self.createButton(b_reload)
+  self.createButton(b_bul)
+  self.createButton(b_check)
+
+  self.createInput(i_reload)
+  self.createInput(i_min)
+  self.createInput(i_max)
+  self.createInput(i_type)
+
+  updateButtons()
+
+end
+
+function shot(obj, color)
+  local a = math.random(min,max)
+
+  if count - a > 0 then
+    for i = 1,a do
+      printToColor(Player[color].steam_name .. " выстрелил " .. bullets[count], "Black", color)
+      table.remove(bullets, count)
+      count = #bullets
+    end
+    printToColor(Player[color].steam_name .. " выстрелил " .. a .. " пт. Теперь их ".. count, "Black", color)
+  elseif count > 0 and count - a <= 0 then
+      local temp = count
+      for i = 1,count do
+        printToColor(Player[color].steam_name .. " выстрелил " .. bullets[count], "Black", color)
+        table.remove(bullets, count)
+        count = #bullets
+      end
+      printToColor(Player[color].steam_name .. " выстрелил " .. temp .. " пт. ОРУЖИЕ РАЗРЯЖЕНО", "Black", color)
+      printToColor("ПАТРОНОВ БОЛЬШЕ НЕТ", color, color)
+  elseif count == 0 then
+    printToColor("ОРУЖИЕ РАЗРЯЖЕНО", color, color)
+  end
+  updateButtons()
+end
+
+function reload(obj, color)
+
+  if count + bullets_to_reload <= max_bullets then
+    for i = count+1,count+bullets_to_reload do
+      table.insert(bullets, i, btype)
+      count = #bullets
+    end
+    printToColor(Player[color].steam_name .. " зарядил " .. bullets_to_reload .. " пт. Теперь их ".. count, "Black", color)
+  elseif count + bullets_to_reload > max_bullets then
+    local temp = max_bullets - count
+    for i = count+1, max_bullets do
+      table.insert(bullets, i, btype)
+      count = #bullets
+    end
+    printToColor(Player[color].steam_name .. " зарядил " .. temp .. " пт. МАГАЗИН ПОЛОН в нём ".. max_bullets .. " пт", "Black", color)
+  end
+  updateButtons()
+end
+
+function upd_max()
+  local b = self.getGMNotes()
+  max_bullets = tonumber(b)
+  self.editButton({
+    index          = 1,
+    tooltip          = "Максимум ".. max_bullets,
+  })
+end
+
+function input_reload(obj, color, input)
+  bullets_to_reload = input
+end
+
+function input_min(obj, color, input)
+  min = input
+end
+
+function input_max(obj, color, input)
+  max = input
+end
+
+function updateButtons(obj, color, input)
+  if lever == true then
+    self.editButton({
+      index          = 1,
+      label          = tostring(count),
+    })
+  else
+    self.editButton({
+      index          = 1,
+      label          = "?",
+    })
+  end
+  self.editButton({
+    index          = 3,
+    label          = bullets[count],
+  })
+end
+
+function itype(obj, color, input)
+  btype = input
+end
+
+function upbul(obj, color)
+  for i,d in pairs(bullets) do
+    printToColor(i .." " .. d , color , "White")
+  end
+end
+
+function check(obj, color)
+  if lever == true then
+    lever = false
+    printToColor(Player[color].steam_name .. " перестал считать патроны", "Black", color)
+  else
+    lever = true
+    printToColor(Player[color].steam_name .. " начал считать патроны", "Black", color)
+  end
+  updateButtons()
+end
+
+function ButtonsParams()
+  b_display = {
+    click_function = "upd_max",
+    function_owner = self,
+    label          = "ERROR",
+    position       = {-0.75,0.25,-0.75},
+    width          = 250,
+    height         = 150,
+    font_size      = 100,
+    color          = black,
+    font_color     = white,
+    tooltip = "Максимум ".. max_bullets,
+  }
+
+  b_check = {
+    click_function = "check",
+    function_owner = self,
+    label          = "ПТ",
+    position       = {-0.75,0.25,-0.48},
+    width          = 250,
+    height         = 150,
+    font_size      = 80,
+    color          = black,
+    font_color     = white,
+    tooltip        = "Пересчёт патронов"
+    }
+
+  b_reload = {
+    click_function = "reload",
+    function_owner = self,
+    label          = "Зарядить",
+    position       = {0.75,0.25,-0.75},
+    width          = 300,
+    height         = 150,
+    font_size      = 50,
+    color          = black,
+    font_color     = white,
+  }
+
+  b_shot = {
+    click_function = "shot", function_owner = self, label = "Выстрелить", position = {0,0.25,0.8},
+    width = 500, height = 140, font_size = 75, color = black, font_color = white,
+  }
+
+  b_bul = {
+    click_function = "upbul", function_owner = self, label = bullets[count], position = {0,0.25,0.5},
+    width = 500, height = 140, font_size = 75, color = black, font_color = white,
+  }
+
+  i_min = {
+    input_function = "input_min",
+    function_owner = self,
+    alignment      = 1,
+    position       = {-0.75,0.25,0.8},
+    width          = 150,
+    height         = 120,
+    font_size      = 80,
+    color          = black,
+    font_color     = white,
+    tooltip        = "Минимум",
+    value          = min,
+    validation     = "2",
+    }
+
+  i_max = {
+    input_function = "input_max",
+    function_owner = self,
+    alignment      = 1,
+    position       = {0.75,0.25,0.8},
+    width          = 150,
+    height         = 120,
+    font_size      = 80,
+    color          = black,
+    font_color     = white,
+    tooltip        = "Максимум",
+    value          = max,
+    validation     = "2",
+    }
+
+  i_reload = {
+    input_function = "input_reload",
+    function_owner = self,
+    alignment      = 3,
+    position       = {0.35,0.25,-0.75},
+    width          = 150,
+    height         = 110,
+    font_size      = 80,
+    color          = black,
+    font_color     = white,
+    tooltip        = "Сколько зарядить",
+    value          = bullets_to_reload,
+    validation     = "2",
+    }
+  i_type = {
+    input_function = "itype",
+    function_owner = self,
+    alignment      = 3,
+    position       = {0.6,0.25,-0.55},
+    width          = 390,
+    height         = 70,
+    font_size      = 40,
+    color          = black,
+    font_color     = white,
+    tooltip        = "Тип патронов",
+    value          = btype,
+    }
+end

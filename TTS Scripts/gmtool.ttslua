@@ -1,0 +1,227 @@
+cubeGUID = "9474b5"
+sec = 2,5
+colors_zones = {
+  White = "7df661",
+  Brown = nil,
+  Red = nil,
+  Orange = nil,
+  Yellow = "8203bd",
+  Green = nil,
+  Teal = nil,
+  Blue = nil,
+  Purple = nil,
+  Pink = "562272",
+  Grey = nil,
+  Black = nil,
+}
+
+x1 = -0.55
+x2 = 0.5
+y = 0.12
+
+b_params = {
+  {
+    pos = {x1, y,-2.7},
+    size = 450,
+    tooltip = "White"
+  },
+  {
+    pos = {x1,y,-1.65},
+    size = 450,
+    tooltip = "Brown"
+  },
+  {
+    pos = {x1,y,-0.6},
+    size = 450,
+    tooltip = "Red"
+  },
+  {
+    pos = {x1,y,0.45},
+    size = 450,
+    tooltip = "Orange"
+  },
+  {
+    pos = {x1,y,1.5},
+    size = 450,
+    tooltip = "Yellow"
+  },
+  {
+    pos = {x1,y,2.6},
+    size = 450,
+    tooltip = "Green"
+  },
+
+
+
+  {
+    pos = {x2, y,-2.7},
+    size = 450,
+    tooltip = "Teal"
+  },
+  {
+    pos = {x2,y,-1.65},
+    size = 450,
+    tooltip = "Blue"
+  },
+  {
+    pos = {x2,y,-0.6},
+    size = 450,
+    tooltip = "Purple"
+  },
+  {
+    pos = {x2,y,0.45},
+    size = 450,
+    tooltip = "Pink"
+  },
+  {
+    pos = {x2,y,1.5},
+    size = 450,
+    tooltip = "Grey"
+  },
+  {
+    pos = {x2,y,2.6},
+    size = 450,
+    tooltip = "Black"
+  },
+}
+
+buttonFontColor = {0,0,0}
+buttonColor = {0,0,0,0}
+buttonScale = {1,1,1}
+
+color_list = Color.list
+
+function onLoad(save_state)
+  spawnedButtonCount = 0
+  createButtons()
+  addContextMenuItem("Открыть глаза всем", unblindall)
+  addContextMenuItem("Закрыть глаза всем", blindall)
+  addHotkey("Призвать всех", camera)
+  addHotkey("Призвать игрока", camera_single)
+  addHotkey("Передать игроку", give)
+  addHotkey("Открыть/Закрыть глаза игроку", blind)
+  addHotkey("Призвать плашку", getboard)
+end
+
+function getboard(player_color)
+  if player_color == "Black" then
+    old_pos = self.getPosition()
+    my_pos = Player.Black.getPointerPosition()
+    self.setPosition(my_pos)
+    Wait.time(
+      function()
+        self.setPosition(old_pos)
+      end,
+      sec,
+      1)
+  end
+end
+
+
+function createButtons()
+  for i, data in pairs(b_params) do
+
+    local funcName = "Choose"..i
+    local func = function() ChooseColor(i) end
+    self.setVar(funcName, func)
+
+    local displayNumber = spawnedButtonCount
+    local label = ""
+    local size = data.size
+
+    self.createButton({
+        label=label, click_function=funcName, function_owner=self,
+        position=data.pos, height=size, width=size,
+        font_size=data.size, scale=buttonScale,
+        color=buttonColor, font_color=buttonFontColor,
+        tooltip = data.tooltip
+    })
+    spawnedButtonCount = spawnedButtonCount + 1
+  end
+end
+
+function ChooseColor(i)
+    for ind, color in pairs(color_list) do
+      if ind == i then
+        printToColor("Выбран " .. color, "Black", color)
+        getObjectFromGUID(cubeGUID).setName(color)
+        getObjectFromGUID(cubeGUID).setColorTint(color)
+        for name, g in pairs(colors_zones) do
+          if name == color then
+          getObjectFromGUID(cubeGUID).setDescription(g)
+          end
+        end
+      end
+    end
+end
+
+
+function give(player_color)
+  if player_color == "Black" then
+    m_obj = getObjectFromGUID(cubeGUID).getDescription()
+    new_pos = getObjectFromGUID(m_obj).getPosition()
+    new_pos[3] = new_pos[3] - 1.5
+    local parameters = {
+      position = new_pos
+    }
+    objects = Player.Black.getSelectedObjects()
+    copy(objects)
+    paste(parameters)
+  end
+end
+
+function camera(player_color)
+  if player_color == "Black" then
+    players = getSeatedPlayers()
+    pos = Player["Black"].getPointerPosition()
+    for _, player in pairs (players) do
+      Player[player].lookAt({
+        position = pos,
+        pitch = 90,
+        distance = 20,
+        require_table = true,
+    })
+    end
+  end
+end
+
+function camera_single(player_color)
+  if player_color == "Black" then
+    pos = Player["Black"].getPointerPosition()
+    Player[getObjectFromGUID(cubeGUID).getName()].lookAt({
+      position = pos,
+      pitch = 90,
+      distance = 20,
+      require_table = true,
+    })
+  end
+end
+
+function blindall (player_color)
+  if player_color == "Black" then
+    local players = getSeatedPlayers()
+    for _, player in pairs (players) do
+      Player[player].blindfolded = true
+    end
+  end
+end
+
+function unblindall (player_color)
+  if player_color == "Black" then
+    local players = getSeatedPlayers()
+    for _, player in pairs (players) do
+      Player[player].blindfolded = false
+    end
+  end
+end
+
+function blind(player_color)
+  if player_color == "Black" then
+    local color = getObjectFromGUID(cubeGUID).getName()
+    if Player[color].blindfolded == true then
+      Player[color].blindfolded = false
+    else
+      Player[color].blindfolded = true
+    end
+  end
+end
