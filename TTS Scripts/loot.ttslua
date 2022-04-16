@@ -1,72 +1,70 @@
 function onLoad()
-  self.createButton({
-    click_function = "fBag", function_owner = self, label = "Выложить\nслучайные\nпредметы",
-    position       = {0, 0.15 , 1.5}, width = 1400, height = 600,
-    font_size      = 180, color = {0, 0, 0}, font_color     = {1, 1, 1},
-  })
+    self.createButton({
+        click_function = "fBag", function_owner = self, label = "Выложить\nслучайные\nпредметы",
+        position       = {0, 0.15 , 1.5}, width = 1400, height = 600,
+        font_size      = 180, color = {0, 0, 0}, font_color     = {1, 1, 1},
+    })
 
-  self.createButton({
-    click_function = "fZone", function_owner = self, label = "",
-    position       = {1.3, 0.15 , -2.1}, width = 100, height = 100,
-    font_size      = 0, color = {0, 0, 1}, tooltip     = "Автонастройка зоны",
-  })
+    self.createButton({
+        click_function = "fZone", function_owner = self, label = "",
+        position       = {1.3, 0.15 , -2.1}, width = 100, height = 100,
+        font_size      = 0, color = {0, 0, 1}, tooltip     = "Автонастройка зоны",
+    })
 
-  t = {}
+    t = {}
 end
 
 function fSettings()
-  s = self.getGMNotes()
-  for k in string.gmatch(s, "([^\n]+)") do
-  	for name, value in string.gmatch(k, "(.+)=(.+)") do
-      t[name] = value
+    s = self.getGMNotes()
+    for k in string.gmatch(s, "([^\n]+)") do
+        for name, value in string.gmatch(k, "(.+)=(.+)") do
+            t[name] = value
+        end
     end
-  end
 end
 
 function fZone()
-  fSettings()
-  local zone = getObjectFromGUID(t.GUID)
-  local token_scale = self.getScale()
+    fSettings()
+    local zone = getObjectFromGUID(t.GUID)
+    local token_scale = self.getScale()
 
-  local a = self.getSnapPoints()
-  for _, i in pairs(a) do
-    point_pos = self.positionToWorld(i.position)
-  end
-  zone.setScale(token_scale)
-  zone.setPosition(point_pos + vector(0, 0.6, 0))
+    local a = self.getSnapPoints()
+    for _, i in pairs(a) do
+        point_pos = self.positionToWorld(i.position)
+    end
+    zone.setScale(token_scale)
+    zone.setPosition(point_pos + vector(0, 0.6, 0))
 end
 
 function fBag()
-  fSettings()
+    fSettings()
 
-  local zone = getObjectFromGUID(t.GUID)
-  for _, occupyingObject in ipairs(zone.getObjects()) do
-    bag = occupyingObject
-  end
-
-  local min = tonumber(t.Min)
-  local max = tonumber(t.Max)
-
-  if max > #bag.getObjects() then
-    max = #bag.getObjects()
-  end
-
-  if min > #bag.getObjects() then
-    min = 1
-  end
-
-  if max > 0 then
-    local token_pos = self.getPosition()
-    local quantity = math.random(min, max)
-    for item = 1, quantity do
-      local new_pos = token_pos + vector(tonumber(t.X), 1*item, tonumber(t.Z))
-      bag.randomize()
-      local a = bag.getObjects()
-      for _, item_table in pairs(a) do
-        item_table.position = new_pos
-      end
-      bag.takeObject(a[1])
+    local zone = getObjectFromGUID(t.GUID)
+    for _, occupyingObject in ipairs(zone.getObjects()) do
+        bag = occupyingObject
     end
-    bag.destruct()
-  end
+
+    local min = tonumber(t.Min)
+    local max = tonumber(t.Max)
+
+    if max > #bag.getObjects() then
+        max = #bag.getObjects()
+    end
+
+    if min > #bag.getObjects() then
+        min = 1
+    end
+
+    if max > 0 then
+        local token_pos = self.getPosition()
+        local quantity = math.random(min, max)
+        for item = 1, quantity do
+            local new_pos = token_pos + vector(tonumber(t.X), 1*item, tonumber(t.Z))
+            bag.randomize()
+            local a = bag.getObjects()
+            a[1].position = new_pos
+            bag.takeObject(a[1])
+        end
+        bag.destruct()
+    end
 end
